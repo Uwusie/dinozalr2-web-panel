@@ -1,5 +1,11 @@
+import WheelOfFortune from "./components/WheelOfFortune/WheelOfFortune";
+
 function App() {
-  return <div className="App"></div>;
+  return (
+    <>
+      <WheelOfFortune />
+    </>
+  );
 }
 
 export default App;
