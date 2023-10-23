@@ -5,9 +5,10 @@ import PercentIcon from "@mui/icons-material/Percent";
 import ColorLensIcon from "@mui/icons-material/ColorLens";
 import TextField from "@mui/material/TextField";
 import "./style.scss";
-import { Stack } from "@mui/material";
+import { Button, IconButton, Stack } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Paper from "@mui/material/Paper";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 interface Slice {
   name: string;
@@ -83,27 +84,60 @@ function WheelOfFortune() {
     setSlices((prev) => [...prev, { name: "", percent: "10%", color: "red" }]);
   };
 
+  const deleteSlice = (index: number) => {
+    setSlices((prevSlices) => prevSlices.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="wheelOfFortune-wrapper">
       <div className="wheelOfFortune-wheel">
+        <Button variant="contained" onClick={addSlice}>
+          +
+        </Button>
         {slices.length <= 0 ? (
           <>Empty</>
         ) : (
-          <svg
-            height="500"
-            width="500"
-            viewBox="-1 -1 2 2"
-            style={{ transform: "rotate(-90deg)" }}
-          >
-            {generatePaths()}
-          </svg>
+          <>
+            <svg
+              height="500"
+              width="500"
+              viewBox="-1 -1 2 2"
+              style={{ transform: "rotate(-90deg)" }}
+            >
+              {generatePaths()}
+            </svg>
+          </>
         )}
       </div>
       <div className="inputsWrapper">
         {slices.map((slice, index) => (
           <div className="singleInputWrapper" key={index}>
+            <div
+              style={{
+                height: "100%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={() => deleteSlice(index)}
+                color="inherit"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </div>
             <Stack spacing={2}>
-              <Item sx={{ display: "flex", flexDirection: "column" }}>
+              <Item
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
                 <Box sx={{ display: "flex", alignItems: "flex-end" }}>
                   <AbcIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
                   <TextField
@@ -142,8 +176,6 @@ function WheelOfFortune() {
             </Stack>
           </div>
         ))}
-
-        <button onClick={addSlice}>+</button>
       </div>
     </div>
   );

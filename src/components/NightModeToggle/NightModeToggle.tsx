@@ -12,15 +12,9 @@ const NightModeToggle = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "background.default",
-        color: "text.primary",
-        borderColor: "text.primary",
-        border: "1px solid",
-        borderRadius: 25,
-        p: 2,
+        p: 1,
       }}
     >
-      {mode} mode
       <IconButton sx={{ ml: 1 }} onClick={toggleColorMode} color="inherit">
         {mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
       </IconButton>
