@@ -1,11 +1,9 @@
-import { useState } from "react";
-import Box from "@mui/material/Box";
+import { useState, useEffect, useRef } from "react";
+import { Box, IconButton, Stack, TextField, Button } from "@mui/material";
 import AbcIcon from "@mui/icons-material/Abc";
 import PercentIcon from "@mui/icons-material/Percent";
 import ColorLensIcon from "@mui/icons-material/ColorLens";
-import TextField from "@mui/material/TextField";
 import "./style.scss";
-import { Button, IconButton, Stack } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Paper from "@mui/material/Paper";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -26,56 +24,66 @@ const Item = styled(Paper)(({ theme }) => ({
 
 function WheelOfFortune() {
   const [slices, setSlices] = useState<Slice[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const getCoordinatesForPercent = (percent: number) => {
-    const x = Math.cos(2 * Math.PI * percent);
-    const y = Math.sin(2 * Math.PI * percent);
-    return [x, y];
-  };
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  const generatePaths = () => {
-    let cumulativePercent = 0;
-    let pathId = 0;
+    const ctx = canvas.getContext("2d");
 
-    return slices.map((slice) => {
-      const percent = parseFloat(slice.percent) / 100;
-      if (isNaN(percent) || percent < 0 || percent > 1) {
-        return null; // Skip invalid slices
-      }
+    if (!ctx) return;
 
-      const [startX, startY] = getCoordinatesForPercent(cumulativePercent);
-      cumulativePercent += percent;
-      const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
-      const largeArcFlag = percent > 0.5 ? 1 : 0;
+    const drawWheel = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const pathData = `M ${startX} ${startY} A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY} L 0 0`;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = Math.min(centerX, centerY);
 
-      return (
-        <>
-          <path key={pathId++} d={pathData} fill={slice.color} />;
-        </>
-      );
-    });
-  };
+      let startAngle = -Math.PI / 2;
 
-  const handlePercentChange = (index: number, newValue: string) => {
+      slices.forEach((slice) => {
+        const percent = parseFloat(slice.percent) / 100;
+        if (isNaN(percent) || percent < 0 || percent > 1) {
+          return;
+        }
+
+        const endAngle = startAngle + 2 * Math.PI * percent;
+
+        // Calculate the position for the text element
+        const textX =
+          centerX +
+          (radius / 2) * Math.cos(startAngle + (endAngle - startAngle) / 2);
+        const textY =
+          centerY +
+          (radius / 2) * Math.sin(startAngle + (endAngle - startAngle) / 2);
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.closePath();
+
+        ctx.fillStyle = slice.color;
+        ctx.fill();
+
+        // Draw the slice name inside the slice
+        ctx.fillStyle = "black";
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(slice.name, textX, textY);
+
+        startAngle = endAngle;
+      });
+    };
+
+    drawWheel();
+  }, [slices]);
+
+  const updateSlice = (index: number, property: string, value: string) => {
     setSlices((prevSlices) =>
       prevSlices.map((slice, i) =>
-        i === index ? { ...slice, percent: newValue } : slice
-      )
-    );
-  };
-  const handleColorChange = (index: number, newValue: string) => {
-    setSlices((prevSlices) =>
-      prevSlices.map((slice, i) =>
-        i === index ? { ...slice, color: newValue } : slice
-      )
-    );
-  };
-  const hanldeNameChange = (index: number, newValue: string) => {
-    setSlices((prevSlices) =>
-      prevSlices.map((slice, i) =>
-        i === index ? { ...slice, name: newValue } : slice
+        i === index ? { ...slice, [property]: value } : slice
       )
     );
   };
@@ -91,22 +99,27 @@ function WheelOfFortune() {
   return (
     <div className="wheelOfFortune-wrapper">
       <div className="wheelOfFortune-wheel">
-        <Button variant="contained" onClick={addSlice}>
+        <Button
+          variant="contained"
+          onClick={addSlice}
+          disabled={
+            slices.reduce((sum, slice) => {
+              const percent = parseFloat(slice.percent) || 0;
+              return sum + percent;
+            }, 0) >= 100
+          }
+        >
           +
         </Button>
         {slices.length <= 0 ? (
           <>Empty</>
         ) : (
-          <>
-            <svg
-              height="500"
-              width="500"
-              viewBox="-1 -1 2 2"
-              style={{ transform: "rotate(-90deg)" }}
-            >
-              {generatePaths()}
-            </svg>
-          </>
+          <canvas
+            ref={canvasRef}
+            width={500}
+            height={500}
+            style={{ transform: "rotate(-90deg)" }}
+          ></canvas>
         )}
       </div>
       <div className="inputsWrapper">
@@ -136,40 +149,41 @@ function WheelOfFortune() {
                 sx={{
                   display: "flex",
                   flexDirection: "column",
+                  gap: 1,
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "flex-end" }}>
-                  <AbcIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
+                  <AbcIcon sx={{ mr: 1, my: 0.5 }} />
                   <TextField
                     id="input-with-sx"
                     label="Nazwa"
                     variant="standard"
                     value={slice.name}
-                    onChange={(e) => hanldeNameChange(index, e.target.value)}
-                  />{" "}
+                    onChange={(e) => updateSlice(index, "name", e.target.value)}
+                  />
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "flex-end" }}>
-                  <PercentIcon
-                    sx={{ color: "action.active", mr: 1, my: 0.5 }}
-                  />
+                  <PercentIcon sx={{ mr: 1, my: 0.5 }} />
                   <TextField
                     id="input-with-sx"
-                    label="Nazwa"
+                    label="Procent szans"
                     variant="standard"
                     value={slice.percent}
-                    onChange={(e) => handlePercentChange(index, e.target.value)}
+                    onChange={(e) =>
+                      updateSlice(index, "percent", e.target.value)
+                    }
                   />
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "flex-end" }}>
-                  <ColorLensIcon
-                    sx={{ color: "action.active", mr: 1, my: 0.5 }}
-                  />
+                  <ColorLensIcon sx={{ mr: 1, my: 0.5 }} />
                   <TextField
                     id="input-with-sx"
-                    label="Nazwa"
+                    label="Kolor"
                     variant="standard"
                     value={slice.color}
-                    onChange={(e) => handleColorChange(index, e.target.value)}
+                    onChange={(e) =>
+                      updateSlice(index, "color", e.target.value)
+                    }
                   />
                 </Box>
               </Item>
