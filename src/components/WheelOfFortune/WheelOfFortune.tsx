@@ -7,12 +7,7 @@ import "./style.scss";
 import { styled } from "@mui/material/styles";
 import Paper from "@mui/material/Paper";
 import DeleteIcon from "@mui/icons-material/Delete";
-
-interface Slice {
-  name: string;
-  percent: string;
-  color: string;
-}
+import { Slice, drawWheel } from "./drawingWheel";
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === "dark" ? "#1A2027" : "#fff",
@@ -25,59 +20,15 @@ const Item = styled(Paper)(({ theme }) => ({
 function WheelOfFortune() {
   const [slices, setSlices] = useState<Slice[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
+  const [wheelName, setWheelName] = useState("");
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
-
     if (!ctx) return;
 
-    const drawWheel = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const radius = Math.min(centerX, centerY);
-
-      let startAngle = -Math.PI / 2;
-
-      slices.forEach((slice) => {
-        const percent = parseFloat(slice.percent) / 100;
-        if (isNaN(percent) || percent < 0 || percent > 1) {
-          return;
-        }
-
-        const endAngle = startAngle + 2 * Math.PI * percent;
-
-        // Calculate the position for the text element
-        const textX =
-          centerX +
-          (radius / 2) * Math.cos(startAngle + (endAngle - startAngle) / 2);
-        const textY =
-          centerY +
-          (radius / 2) * Math.sin(startAngle + (endAngle - startAngle) / 2);
-
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-        ctx.closePath();
-
-        ctx.fillStyle = slice.color;
-        ctx.fill();
-
-        // Draw the slice name inside the slice
-        ctx.fillStyle = "black";
-        ctx.font = "12px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(slice.name, textX, textY);
-
-        startAngle = endAngle;
-      });
-    };
-
-    drawWheel();
+    drawWheel(ctx, canvas, slices);
   }, [slices]);
 
   const updateSlice = (index: number, property: string, value: string) => {
@@ -89,23 +40,56 @@ function WheelOfFortune() {
   };
 
   const addSlice = () => {
-    setSlices((prev) => [...prev, { name: "", percent: "10%", color: "red" }]);
+    setSlices((prev) => [
+      ...prev,
+      {
+        name: "",
+        chance: "10%",
+        color: "#" + Math.floor(Math.random() * 16777215).toString(16),
+      },
+    ]);
   };
 
   const deleteSlice = (index: number) => {
     setSlices((prevSlices) => prevSlices.filter((_, i) => i !== index));
   };
 
+  const saveImage = (event: any) => {
+    if (canvasRef.current) {
+      let link = event.currentTarget;
+      link.setAttribute("download", "canvas.png");
+      let image = canvasRef.current.toDataURL("image/png");
+      link.setAttribute("href", image);
+      console.log(image);
+    }
+  };
+
+  const xd = () => {
+    console.log({
+      name: wheelName,
+      sectors: slices.map((slice) => {
+        return {
+          label: slice.name,
+          chance: parseFloat(slice.chance.replace("%", "")) / 100,
+        };
+      }),
+    });
+  };
+
   return (
     <div className="wheelOfFortune-wrapper">
       <div className="wheelOfFortune-wheel">
+        <a id="download_image_link" href="download_link" onClick={saveImage}>
+          download
+        </a>
+        <button onClick={xd}>xd</button>
         <Button
           variant="contained"
           onClick={addSlice}
           disabled={
             slices.reduce((sum, slice) => {
-              const percent = parseFloat(slice.percent) || 0;
-              return sum + percent;
+              const chance = parseFloat(slice.chance) || 0;
+              return sum + chance;
             }, 0) >= 100
           }
         >
@@ -114,14 +98,19 @@ function WheelOfFortune() {
         {slices.length <= 0 ? (
           <>Empty</>
         ) : (
-          <canvas
-            ref={canvasRef}
-            width={500}
-            height={500}
-            style={{ transform: "rotate(-90deg)" }}
-          ></canvas>
+          <>
+            <canvas ref={canvasRef} width={500} height={500}></canvas>
+            <TextField
+              inputProps={{ maxLength: 25 }}
+              id="input-with-sx"
+              label="Nazwa Koła"
+              variant="standard"
+              value={wheelName}
+              onChange={(e) => setWheelName(e.target.value)}
+            />
+          </>
         )}
-      </div>
+      </div>{" "}
       <div className="inputsWrapper">
         {slices.map((slice, index) => (
           <div className="singleInputWrapper" key={index}>
@@ -135,9 +124,6 @@ function WheelOfFortune() {
             >
               <IconButton
                 size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
                 onClick={() => deleteSlice(index)}
                 color="inherit"
               >
@@ -155,6 +141,7 @@ function WheelOfFortune() {
                 <Box sx={{ display: "flex", alignItems: "flex-end" }}>
                   <AbcIcon sx={{ mr: 1, my: 0.5 }} />
                   <TextField
+                    inputProps={{ maxLength: 25 }}
                     id="input-with-sx"
                     label="Nazwa"
                     variant="standard"
@@ -165,18 +152,20 @@ function WheelOfFortune() {
                 <Box sx={{ display: "flex", alignItems: "flex-end" }}>
                   <PercentIcon sx={{ mr: 1, my: 0.5 }} />
                   <TextField
+                    inputProps={{ maxLength: 25 }}
                     id="input-with-sx"
                     label="Procent szans"
                     variant="standard"
-                    value={slice.percent}
+                    value={slice.chance}
                     onChange={(e) =>
-                      updateSlice(index, "percent", e.target.value)
+                      updateSlice(index, "chance", e.target.value)
                     }
                   />
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "flex-end" }}>
                   <ColorLensIcon sx={{ mr: 1, my: 0.5 }} />
                   <TextField
+                    inputProps={{ maxLength: 25 }}
                     id="input-with-sx"
                     label="Kolor"
                     variant="standard"
