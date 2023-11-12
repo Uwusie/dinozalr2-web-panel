@@ -12,18 +12,29 @@
     gap: 10px;
     align-items: center;
     justify-content: center;
+    max-width: 600px;
   }
 }
 .inputsWrapper {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
-  max-height: 500px;
-  overflow-y: auto;
+  flex-flow: wrap;
   padding-right: 20px;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  max-height: 80vh;
+  height: 100%;
 }
 .singleInputWrapper {
   display: flex;
   gap: 10px;
   align-items: center;
+}
+
+@media (max-width: 1330px) {
+  .inputsWrapper {
+    grid-template-columns: 1fr;
+  }
 }
