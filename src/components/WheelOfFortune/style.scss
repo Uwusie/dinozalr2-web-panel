@@ -27,6 +27,7 @@
   max-height: 80vh;
   height: 100%;
 }
+
 .singleInputWrapper {
   display: flex;
   gap: 10px;
@@ -37,4 +38,21 @@
   .inputsWrapper {
     grid-template-columns: 1fr;
   }
+  .wheelOfFortune-wrapper {
+    overflow-y: auto;
+    flex-direction: column;
+  }
+}
+
+.buttonWrapper {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.buttonAndInputsWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }

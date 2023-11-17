@@ -1,6 +1,6 @@
 export type Slice = {
-  name: string;
-  chance: string;
+  label: string;
+  chance: number;
   color: string;
 };
 export const drawWheel = (
@@ -17,7 +17,7 @@ export const drawWheel = (
   let startAngle = -Math.PI / 2;
 
   slices.forEach((slice) => {
-    const chance = parseFloat(slice.chance) / 100;
+    const chance = slice.chance / 100;
     if (isNaN(chance) || chance < 0 || chance > 1) {
       return;
     }
@@ -47,8 +47,8 @@ export const drawWheel = (
 
     ctx.font = "13px sans-serif";
     ctx.textAlign = "center";
-    if (parseFloat(slice.chance) >= 5) {
-      ctx.fillText(slice.name, 0, 0);
+    if (slice.chance >= 5) {
+      ctx.fillText(slice.label, 0, 0);
     }
 
     ctx.restore();

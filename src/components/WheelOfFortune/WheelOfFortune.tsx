@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { IconButton, Stack, TextField, Button } from "@mui/material";
+import {
+  IconButton,
+  Stack,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Box,
+} from "@mui/material";
 import AbcIcon from "@mui/icons-material/Abc";
 import PercentIcon from "@mui/icons-material/Percent";
 import ColorLensIcon from "@mui/icons-material/ColorLens";
@@ -10,7 +20,13 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { Slice, drawWheel } from "./drawingWheel";
 import { SliceInput } from "./SliceInput";
 import { HuePicker } from "react-color";
-
+import {
+  addSlice,
+  deleteSlice,
+  splitPercentageEvenly,
+  updateSlice,
+} from "./slicesFunctions";
+import { xd2 } from "./mocks";
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === "dark" ? "#1A2027" : "#fff",
   ...theme.typography.body2,
@@ -23,6 +39,8 @@ function WheelOfFortune() {
   const [slices, setSlices] = useState<Slice[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [wheelName, setWheelName] = useState("");
+  const [selectedWheel, setSelectedWheel] = useState("");
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -33,93 +51,49 @@ function WheelOfFortune() {
     drawWheel(ctx, canvas, slices);
   }, [slices]);
 
-  const updateSlice = (index: number, property: string, value: string) => {
-    setSlices((prevSlices) => {
-      const updatedSlices = prevSlices.map((slice, i) =>
-        i === index ? { ...slice, [property]: value } : slice
+  useEffect(() => {
+    const selectedSlices = xd2.find(
+      ({ name }) => selectedWheel === name
+    )?.sectors;
+    selectedSlices &&
+      setSlices(
+        selectedSlices.map((slice) => {
+          return {
+            ...slice,
+            chance: slice.chance * 100,
+          };
+        })
       );
+  }, [selectedWheel]);
 
-      // Check if the total percentage is greater than 100
-      const totalPercentage = updatedSlices.reduce(
-        (sum, slice) => sum + parseFloat(slice.chance) || 0,
-        0
-      );
-
-      // If total percentage is greater than 100, do not update the slices
-      if (totalPercentage <= 100) {
-        return updatedSlices;
-      } else {
-        // You can handle this case by displaying an error or taking other appropriate actions
-        console.error("Total percentage cannot exceed 100%");
-        return prevSlices;
-      }
-    });
-  };
-
-  const addSlice = () => {
-    setSlices((prev) => [
-      ...prev,
-      {
-        name: "",
-        chance: "10%",
-        color: "#" + Math.floor(Math.random() * 16777215).toString(16),
-      },
-    ]);
-  };
-
-  const deleteSlice = (index: number) => {
-    setSlices((prevSlices) => prevSlices.filter((_, i) => i !== index));
-  };
-
-  const saveImage = (event: any) => {
+  const xd = (event: any) => {
+    let image;
     if (canvasRef.current) {
-      let link = event.currentTarget;
-      link.setAttribute("download", "canvas.png");
-      let image = canvasRef.current.toDataURL("image/png");
-      link.setAttribute("href", image);
-      console.log(image);
+      image = canvasRef.current.toDataURL("image/png");
     }
-  };
-
-  const xd = () => {
     console.log({
       name: wheelName,
+      image: image,
       sectors: slices.map((slice) => {
         return {
-          label: slice.name,
-          chance: parseFloat(slice.chance.replace("%", "")) / 100,
+          label: slice.label,
+          chance: slice.chance / 100,
+          color: slice.color,
         };
       }),
     });
   };
 
-  const splitPercentageEvenly = () => {
-    setSlices(
-      slices.map((slice) => {
-        return {
-          ...slice,
-          chance: ((1 / slices.length) * 100).toFixed(2),
-        };
-      })
-    );
-  };
-
   return (
     <div className="wheelOfFortune-wrapper">
       <div className="wheelOfFortune-wheel">
-        <button onClick={() => splitPercentageEvenly()}>
-          split percentage evenly
-        </button>
-        <a id="download_image_link" href="download_link" onClick={saveImage}>
-          download
-        </a>
         <button onClick={xd}>xd</button>
         <Button
           variant="contained"
-          onClick={addSlice}
+          onClick={() => addSlice(setSlices)}
           disabled={
             slices.reduce((sum, slice) => {
-              const chance = parseFloat(slice.chance) || 0;
+              const chance = slice.chance || 0;
               return sum + chance;
             }, 0) >= 100
           }
@@ -130,7 +104,7 @@ function WheelOfFortune() {
           <>Empty</>
         ) : (
           <>
-            <canvas ref={canvasRef} width={500} height={500}></canvas>
+            <canvas ref={canvasRef} width={400} height={400}></canvas>
             <TextField
               inputProps={{ maxLength: 25 }}
               id="input-with-sx"
@@ -139,66 +113,106 @@ function WheelOfFortune() {
               value={wheelName}
               onChange={(e) => setWheelName(e.target.value)}
             />
+            <Box sx={{ minWidth: 150 }}>
+              <FormControl fullWidth>
+                <InputLabel id="demo-simple-select-label">
+                  Wybierz koło
+                </InputLabel>
+                <Select
+                  labelId="demo-simple-select-label"
+                  id="demo-simple-select"
+                  label="Wybierz koło"
+                  value={selectedWheel}
+                  onChange={(e) => setSelectedWheel(e.target.value)}
+                >
+                  {xd2.map(({ name }) => (
+                    <MenuItem key={name} value={name}>
+                      {name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
           </>
         )}
       </div>
-      <div className="inputsWrapper">
-        {slices.map((slice, index) => (
-          <div className="singleInputWrapper" key={index}>
-            <div
-              style={{
-                height: "100%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
+      <div className="buttonAndInputsWrapper">
+        {slices.length > 0 && (
+          <div className="buttonWrapper">
+            <Button
+              variant="contained"
+              onClick={() => splitPercentageEvenly(slices, setSlices)}
             >
-              <IconButton
-                size="large"
-                onClick={() => deleteSlice(index)}
-                color="inherit"
-              >
-                <DeleteIcon />
-              </IconButton>
-            </div>
-            <Stack spacing={2}>
-              <Item
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 1,
-                }}
-              >
-                <SliceInput
-                  label="Nazwa"
-                  value={slice.name}
-                  onChange={(e) => updateSlice(index, "name", e.target.value)}
-                  Icon={<AbcIcon sx={{ mr: 1, my: 0.5 }} />}
-                />
-                <SliceInput
-                  label="Procent szans"
-                  value={slice.chance}
-                  onChange={(e) => updateSlice(index, "chance", e.target.value)}
-                  Icon={<PercentIcon sx={{ mr: 1, my: 0.5 }} />}
-                />
-                <SliceInput
-                  label="Kolor"
-                  value={slice.color}
-                  onChange={(e) => updateSlice(index, "color", e.target.value)}
-                  Icon={<ColorLensIcon sx={{ mr: 1, my: 0.5 }} />}
-                  ColorPicker={
-                    <HuePicker
-                      color={slice.color}
-                      onChange={(color) =>
-                        updateSlice(index, "color", color.hex)
-                      }
-                    />
-                  }
-                />
-              </Item>
-            </Stack>
+              split percentage evenly
+            </Button>
           </div>
-        ))}
+        )}
+
+        <div className="inputsWrapper">
+          {slices.map((slice, index) => (
+            <div className="singleInputWrapper" key={index}>
+              <Stack spacing={2}>
+                <Item
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                    position: "relative",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: "0",
+                      zIndex: "2",
+                      top: "0",
+                    }}
+                  >
+                    <IconButton
+                      size="large"
+                      onClick={() => deleteSlice(index, setSlices)}
+                      color="inherit"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </div>
+                  <SliceInput
+                    label="Nazwa"
+                    value={slice.label}
+                    onChange={(e) =>
+                      updateSlice(index, "label", e.target.value, setSlices)
+                    }
+                    Icon={<AbcIcon sx={{ mr: 1, my: 0.5 }} />}
+                  />
+                  <SliceInput
+                    label="Procent szans"
+                    value={slice.chance}
+                    onChange={(e) =>
+                      updateSlice(index, "chance", e.target.value, setSlices)
+                    }
+                    Icon={<PercentIcon sx={{ mr: 1, my: 0.5 }} />}
+                  />
+                  <SliceInput
+                    label="Kolor"
+                    value={slice.color}
+                    onChange={(e) =>
+                      updateSlice(index, "color", e.target.value, setSlices)
+                    }
+                    Icon={<ColorLensIcon sx={{ mr: 1, my: 0.5 }} />}
+                    ColorPicker={
+                      <HuePicker
+                        color={slice.color}
+                        onChange={(color) =>
+                          updateSlice(index, "color", color.hex, setSlices)
+                        }
+                      />
+                    }
+                  />
+                </Item>
+              </Stack>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

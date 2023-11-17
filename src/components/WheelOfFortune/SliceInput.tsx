@@ -9,7 +9,7 @@ export const SliceInput = ({
   ColorPicker,
 }: {
   label: string;
-  value: string;
+  value: string | number;
   onChange: (e: any) => void;
   Icon: React.ReactNode;
   ColorPicker?: any;
